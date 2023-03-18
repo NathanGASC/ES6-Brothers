@@ -7,5 +7,5 @@
     "allowJs": true,
     "sourceMap": false,
   },
-  "files": ["src/ui/mods/mod_pingpong/index.ts"]
+  "files": ["src/ui/mods/mod_localized_brothers/index.ts"]
 }

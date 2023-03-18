@@ -1,5 +1,6 @@
-# ES6 Brothers
+# ES6 Brothers (mod_localized branch)
 This repo contain a basic setup for modding **Battle Brothers**.
+This branch is focused on creating a mod for translation + test this repo to see the limits.
 
 ## Why this repos
 JavaScript is a good language at one condition. Being able to use ES6 syntax (and if possible TypeScript).
