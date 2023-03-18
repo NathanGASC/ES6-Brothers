@@ -1,4 +1,4 @@
-import 'core-js/actual';
+import 'core-js/actual/dom-collections/for-each';
 import fr from "./translations/fr.json"
 import en from "./translations/en.json"
 import {isAncestorOf} from "./utils/isAncestorOf"
@@ -33,6 +33,14 @@ class LocalizedBrothers {
     const oldLang = this.currentLang;
     this.currentLang = lang
     this.translateAllIn(document.body, oldLang, lang);
+  }
+
+  /**
+   * get the current lang
+   * @returns 
+   */
+  getCurrentlang(){
+    return this.currentLang
   }
 
   /**
@@ -138,10 +146,11 @@ var mutationObserver = new MutationObserver((mutationList) => {
   const consoleElement = document.querySelector("#console")
   mutationList.forEach((mutation)=>{
     if(isAncestorOf(consoleElement as HTMLElement, mutation.target as HTMLElement)) return;
-    (window as any).i18n.translateElement(mutation.target as HTMLElement)
+    if(!(mutation.target instanceof HTMLElement)) return
+    (window as any).i18n.translateAllIn(mutation.target as HTMLElement, "en", "fr")
   })
 })
-mutationObserver.observe(document, { childList: true, subtree: true });
+mutationObserver.observe(document, { childList: true, subtree: true, attributes: true, characterData: true });
 
 (window as any).i18n = new LocalizedBrothers();
 (window as any).registerScreen(LocalizedBrothers.id, new LocalizedBrothers());

@@ -12,6 +12,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/core-js": "^2.5.5",
+    "@types/hooker": "^0.2.31",
     "@webpack-cli/generators": "^3.0.1",
     "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^6.7.3",
@@ -25,6 +26,7 @@
     "webpack-watch-files-plugin": "^1.2.1"
   },
   "dependencies": {
-    "core-js": "^3.29.1"
+    "core-js": "^3.29.1",
+    "hooker": "^0.2.3"
   }
 }
