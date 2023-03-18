@@ -1,5 +1,4 @@
-//This import is a polyfill which will implement things which are missing in ES3. 
-//It will add some time (0.5s - 2s) to the game start.
+//TODO: Remove this import to resolve performance issue. Read the README to know what is Polyfill and how to use them.
 import 'core-js/actual';
 
 class PingPong {
@@ -25,5 +24,9 @@ class PingPong {
     }, 2000);
   }
 }
+
+document.querySelectorAll("*").forEach((n)=>{
+  console.log(n)
+});
 
 (window as any).registerScreen(PingPong.id, new PingPong());
