@@ -1,7 +1,7 @@
 import 'core-js/actual';
 import fr from "./translations/fr.json"
 import en from "./translations/en.json"
-import {isAncestorOf} from "./utils/isParent"
+import {isAncestorOf} from "./utils/isAncestorOf"
 
 class LocalizedBrothers {
   sqHandle: any = null
@@ -14,6 +14,14 @@ class LocalizedBrothers {
 
   onConnection(sqHandle: any) {
     this.sqHandle = sqHandle;
+  }
+
+  /**
+   * Short name for "setCurrentLang"
+   * @param lang The new lang you want to use (ex:"fr", "en", "ja", ...)
+   */
+  setLang(lang: keyof typeof this.dictionary){
+    this.setCurrentLang(lang)
   }
 
   /**
@@ -80,7 +88,7 @@ class LocalizedBrothers {
     const key = this.getFromValueForLang(text, fromLang as any);
     if(!key) return;
     const newText = this.getFromKeyForLang(key as any, toLang as any);
-    element.textContent = newText;
+    element.innerHTML = newText;
   }
 
   /**
@@ -105,10 +113,31 @@ class LocalizedBrothers {
         this.translateElement(elem as HTMLElement, fromLang, toLang)
     })
   }
+
+  /**
+   * Help to debug a lang to another one by prefixing text which are not translated from the current lang
+   * to the given one. NOTE: the translations should exist in the current lang. So if you are in english
+   * try to translate "this is a test" in french, but the translation don't exist in the en.json, it will stay like
+   * it is. If the key don't exist in the fr.json, it will become "[NOT TRANSLATED IN fr] this is a test"
+   * @param lang the lang you want to debug
+   */
+  debug(lang:string){
+    document.querySelectorAll("*").forEach((elem)=>{
+      const key = this.getFromValue(elem.innerHTML)
+      if(!key) return;
+      if(!this.getFromKeyForLang(key as any, lang as any)){
+        elem.innerHTML = `[NOT TRANSLATED IN ${lang}] ${elem.innerHTML}`;
+        (elem as HTMLElement).style.fontSize = "12px";
+        (elem as HTMLElement).style.lineHeight = "12px";
+      }
+    })
+  }
 }
 
 var mutationObserver = new MutationObserver((mutationList) => {
+  const consoleElement = document.querySelector("#console")
   mutationList.forEach((mutation)=>{
+    if(isAncestorOf(consoleElement as HTMLElement, mutation.target as HTMLElement)) return;
     (window as any).i18n.translateElement(mutation.target as HTMLElement)
   })
 })
