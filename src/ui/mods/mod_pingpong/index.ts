@@ -1,3 +1,7 @@
+//This import is a polyfill which will implement things which are missing in ES3. 
+//It will add some time (0.5s - 2s) to the game start.
+import 'core-js/actual';
+
 class PingPong {
   sqHandle: any = null
   static id = "pingpong";

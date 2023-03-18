@@ -1,7 +1,6 @@
 require('dotenv').config();
 const CopyPlugin = require("copy-webpack-plugin");
 const WatchExternalFilesPlugin = require('webpack-watch-files-plugin').default
-const ES3Plugin = require("webpack-es3-plugin");
 
 const path = require("path");
 
