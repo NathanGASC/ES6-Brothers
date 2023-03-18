@@ -6,6 +6,8 @@
     "target": "es3",
     "allowJs": true,
     "sourceMap": false,
+    "resolveJsonModule": true,
+    "moduleResolution": "node"
   },
   "files": ["src/ui/mods/mod_localized_brothers/index.ts"]
 }

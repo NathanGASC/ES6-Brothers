@@ -1,7 +1,7 @@
 this.LocalizedBrothers <- {
 	ID = "localized_brothers",
 	Version = "1.0.0",
-	Name = "Ping pong"
+	Name = "Localized Brothers"
 
 	m = {
 		JSHandle = null,
