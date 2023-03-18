@@ -3,7 +3,7 @@
     "allowSyntheticDefaultImports": true,
     "noImplicitAny": true,
     "module": "ES6",
-    "target": "es3",
+    "target": "ES3",
     "allowJs": true,
     "sourceMap": false,
     "resolveJsonModule": true,
