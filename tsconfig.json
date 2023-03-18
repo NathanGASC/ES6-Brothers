@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "noImplicitAny": true,
+    "module": "ES6",
+    "target": "es3",
+    "allowJs": true,
+    "sourceMap": false,
+  },
+  "files": ["src/ui/mods/mod_pingpong/index.ts"]
+}
