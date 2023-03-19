@@ -12,6 +12,7 @@ class LocalizedBrothers {
   private currentLang: keyof typeof this.dictionary = "en"
 
   constructor() {
+    this.setLang("fr")
   }
 
   onConnection(sqHandle: any) {
@@ -103,7 +104,7 @@ class LocalizedBrothers {
     const domTextFormated = this.reverseTranslationParser(domText);
     const translationKey = this.getFromValueForLang(domTextFormated, fromLang as any);
     if(!translationKey) return
-    var oldTranslation = this.getFromKeyForLang(translationKey as any,"en") as any
+    var oldTranslation = this.getFromKeyForLang(translationKey as any,fromLang as any) as string
     oldTranslation = this.translationParser(oldTranslation)
     var data = this.dataExtractor(domText, oldTranslation)
     var newText = this.getFromKeyForLang(translationKey as any, toLang as any);
@@ -214,15 +215,15 @@ class LocalizedBrothers {
   }
 }
 
-// var mutationObserver = new MutationObserver((mutationList) => {
-//   const consoleElement = document.querySelector("#console")
-//   mutationList.forEach((mutation) => {
-//     if (isAncestorOf(consoleElement as HTMLElement, mutation.target as HTMLElement)) return;
-//     if (!(mutation.target instanceof HTMLElement)) return
-//     (window as any).i18n.translateElement(mutation.target as HTMLElement, "en", "fr")
-//   })
-// })
-// mutationObserver.observe(document, { childList: true, subtree: true, attributes: true, characterData: true });
+var mutationObserver = new MutationObserver((mutationList) => {
+  const consoleElement = document.querySelector("#console")
+  mutationList.forEach((mutation) => {
+    if (isAncestorOf(consoleElement as HTMLElement, mutation.target as HTMLElement)) return;
+    if ((mutation.target as HTMLElement).textContent == null || (mutation.target as HTMLElement).textContent == "") return;
+    (window as any).i18n.translateElement(mutation.target as HTMLElement, "en", "fr")
+  })
+})
+mutationObserver.observe(document, { childList: true, subtree: true, attributes: true, characterData: true });
 
 document.addEventListener("click", (ev)=>{
   const domText = (ev.target as any).innerHTML
@@ -232,7 +233,7 @@ document.addEventListener("click", (ev)=>{
   (console as any).reverseLog(domTextFormated);
   console.log(translationKey)
   if(!translationKey) return
-  var oldTranslation = (window as any).i18n.getFromKeyForLang(translationKey as any,"en") as any
+  var oldTranslation = (window as any).i18n.getFromKeyForLang(translationKey as any,"en") as string
   oldTranslation = (window as any).i18n.translationParser(oldTranslation)
   var data = (window as any).i18n.dataExtractor(domText, oldTranslation)
   var newText = (window as any).i18n.getFromKeyForLang(translationKey as any, "fr");
