@@ -1,18 +1,36 @@
 import 'core-js/actual/dom-collections/for-each';
+import 'core-js/actual/array/virtual/find-index';
 
 import fr from "./translations/fr.json"
 import en from "./translations/en.json"
 import { isAncestorOf } from "./utils/isAncestorOf"
 import { escapeRegExp } from "./utils/escapeRegExp"
+import {traverseChildren} from "./utils/traverseChildren"
 
 class LocalizedBrothers {
   sqHandle: any = null
   static id = "localized_brothers";
   dictionary = { fr, en }
   private currentLang: keyof typeof this.dictionary = "en"
-
+  
   constructor() {
-    this.setLang("fr")
+    var mutationObserver = new MutationObserver((mutationList) => {
+      const consoleElement = document.querySelector("#console")
+
+      mutationList.forEach((mutation) => {
+        //TODO: add more conditions to avoid using translateElement too much as the method is costly
+        //debounce & throttle can help to handle the cost
+        if(!(mutation.target instanceof HTMLElement)) return
+        if (isAncestorOf(consoleElement as HTMLElement, mutation.target)) return;
+        if ((mutation.target).textContent == null || (mutation.target).textContent == "") return;
+        if(mutation.attributeName == `data-translated-to`) return
+        if((mutation.target).dataset[`translatedTo`] == this.currentLang) return;
+        mutation.target.dataset[`translatedTo`] = this.currentLang;
+
+        this.translateElement(mutation.target, "en", this.currentLang)
+      })
+    })
+    mutationObserver.observe(document, { childList: true, subtree: true, attributes: true, characterData: true });
   }
 
   onConnection(sqHandle: any) {
@@ -100,16 +118,31 @@ class LocalizedBrothers {
    * @param toLang the new lang which should replace the old one
    */
   translateElement(element: HTMLElement, fromLang: string, toLang: string) {
-    const domText = element.innerHTML
+    const domText = element.innerHTML;
     const domTextFormated = this.reverseTranslationParser(domText);
-    const translationKey = this.getFromValueForLang(domTextFormated, fromLang as any);
-    if(!translationKey) return
+    var translationKey = this.getFromValueForLang(domTextFormated, fromLang as any);
+
+    if(!translationKey){
+      //TODO: this comments are here to help debuging tooltips if needed
+      // if(isAncestorOf(document.querySelector(".tooltip-module"),element)){
+      //   console.log("domText : " + element.textContent)
+      //   console.log("domTextFormated : " + domTextFormated)
+      //   console.log(translationKey)
+      // }
+
+      translationKey = this.getFromValueForLang(element.textContent, fromLang as any);
+      if(translationKey) this.translateAllIn(element, fromLang, toLang)
+      return
+    }
+
+
     var oldTranslation = this.getFromKeyForLang(translationKey as any,fromLang as any) as string
     oldTranslation = this.translationParser(oldTranslation)
     var data = this.dataExtractor(domText, oldTranslation)
     var newText = this.getFromKeyForLang(translationKey as any, toLang as any);
     newText = this.translationParser(newText)
-    newText = this.dataInjector(newText, data)
+    newText = this.dataInjector(newText, data);
+
     element.innerHTML = newText;
   }
 
@@ -214,33 +247,6 @@ class LocalizedBrothers {
     return translation
   }
 }
-
-var mutationObserver = new MutationObserver((mutationList) => {
-  const consoleElement = document.querySelector("#console")
-  mutationList.forEach((mutation) => {
-    if (isAncestorOf(consoleElement as HTMLElement, mutation.target as HTMLElement)) return;
-    if ((mutation.target as HTMLElement).textContent == null || (mutation.target as HTMLElement).textContent == "") return;
-    (window as any).i18n.translateElement(mutation.target as HTMLElement, "en", "fr")
-  })
-})
-mutationObserver.observe(document, { childList: true, subtree: true, attributes: true, characterData: true });
-
-document.addEventListener("click", (ev)=>{
-  const domText = (ev.target as any).innerHTML
-  const domTextFormated = (window as any).i18n.reverseTranslationParser(domText);
-  const translationKey = (window as any).i18n.getFromValueForLang(domTextFormated, "en");
-  (console as any).reverseLog(domText);
-  (console as any).reverseLog(domTextFormated);
-  console.log(translationKey)
-  if(!translationKey) return
-  var oldTranslation = (window as any).i18n.getFromKeyForLang(translationKey as any,"en") as string
-  oldTranslation = (window as any).i18n.translationParser(oldTranslation)
-  var data = (window as any).i18n.dataExtractor(domText, oldTranslation)
-  var newText = (window as any).i18n.getFromKeyForLang(translationKey as any, "fr");
-  newText = (window as any).i18n.translationParser(newText)
-  newText = (window as any).i18n.dataInjector(newText, data)
-  console.log(newText)
-});
 
 (window as any).i18n = new LocalizedBrothers();
 (window as any).registerScreen(LocalizedBrothers.id, new LocalizedBrothers());

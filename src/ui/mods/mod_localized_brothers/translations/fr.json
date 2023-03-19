@@ -40,6 +40,7 @@
    "HIDE_TREE": "Cacher les arbres",
    "OVERLAYS": "Interfaces",
    "SHOW_HP": "Afficher les points de vie",
+   "SHOW_HP_TOOLTIP": "Affichez toujours des barres pour les points de vie et l'armure flottant au-dessus des personnages en combat, par opposition uniquement lorsque les personnages sont touchés.",
    "ORIENTATION_ICON": "Icone hors écran",
    "FLOW": "Gestuelle",
    "FASTER_PLAYER_MOVEMENT": "Mouvement du joueur accéléré",

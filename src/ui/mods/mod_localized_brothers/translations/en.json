@@ -40,6 +40,7 @@
     "HIDE_TREE": "Always Hide Trees",
     "OVERLAYS": "Overlays",
     "SHOW_HP": "Always Show Hitpoint Bars",
+    "SHOW_HP_TOOLTIP": "Always show bars for hitpoints and armor floating above characters in combat, as opposed to only when characters get hit.",
     "ORIENTATION_ICON": "Show Orientation Icons",
     "FLOW": "Flow",
     "FASTER_PLAYER_MOVEMENT": "Faster Player Movement",
