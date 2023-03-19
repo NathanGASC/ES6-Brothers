@@ -14,23 +14,6 @@ class LocalizedBrothers {
   private currentLang: keyof typeof this.dictionary = "en"
   
   constructor() {
-    var mutationObserver = new MutationObserver((mutationList) => {
-      const consoleElement = document.querySelector("#console")
-
-      mutationList.forEach((mutation) => {
-        //TODO: add more conditions to avoid using translateElement too much as the method is costly
-        //debounce & throttle can help to handle the cost
-        if(!(mutation.target instanceof HTMLElement)) return
-        if (isAncestorOf(consoleElement as HTMLElement, mutation.target)) return;
-        if ((mutation.target).textContent == null || (mutation.target).textContent == "") return;
-        if(mutation.attributeName == `data-translated-to`) return
-        if((mutation.target).dataset[`translatedTo`] == this.currentLang) return;
-        mutation.target.dataset[`translatedTo`] = this.currentLang;
-
-        this.translateElement(mutation.target, "en", this.currentLang)
-      })
-    })
-    mutationObserver.observe(document, { childList: true, subtree: true, attributes: true, characterData: true });
   }
 
   onConnection(sqHandle: any) {
@@ -58,7 +41,7 @@ class LocalizedBrothers {
 
   /**
    * get the current lang
-   * @returns 
+   * @returns the current lang
    */
   getCurrentlang() {
     return this.currentLang
@@ -121,29 +104,38 @@ class LocalizedBrothers {
     const domText = element.innerHTML;
     const domTextFormated = this.reverseTranslationParser(domText);
     var translationKey = this.getFromValueForLang(domTextFormated, fromLang as any);
-
     if(!translationKey){
-      //TODO: this comments are here to help debuging tooltips if needed
-      // if(isAncestorOf(document.querySelector(".tooltip-module"),element)){
-      //   console.log("domText : " + element.textContent)
-      //   console.log("domTextFormated : " + domTextFormated)
-      //   console.log(translationKey)
-      // }
-
-      translationKey = this.getFromValueForLang(element.textContent, fromLang as any);
-      if(translationKey) this.translateAllIn(element, fromLang, toLang)
       return
     }
-
-
     var oldTranslation = this.getFromKeyForLang(translationKey as any,fromLang as any) as string
     oldTranslation = this.translationParser(oldTranslation)
     var data = this.dataExtractor(domText, oldTranslation)
+    data = this.translateData(data, fromLang, toLang)
     var newText = this.getFromKeyForLang(translationKey as any, toLang as any);
     newText = this.translationParser(newText)
     newText = this.dataInjector(newText, data);
 
     element.innerHTML = newText;
+  }
+
+  /**
+   * Translate the data if needed. For example if a data is a difficulty "beginner", we want to translate it.
+   * @param data a data array to translate
+   * @param fromLang from a given lang
+   * @param toLang to another lang
+   * @returns return the same array but translated if possible
+   */
+  translateData(data:string[], fromLang: string, toLang: string){
+    data.forEach((v,i,o) => {
+      const dataKey = this.getFromValueForLang(v, fromLang as any)
+      if(dataKey){
+        var newTranslation = this.getFromKeyForLang(dataKey as any, toLang as any)
+        if(newTranslation) {
+          o[i] = newTranslation
+        }
+      }
+    })
+    return data;
   }
 
   /**
@@ -234,7 +226,7 @@ class LocalizedBrothers {
         o[i] = escapeRegExp(r)
     })
 
-    const regex = new RegExp(splittedTranslatedValue.join("(.*?)"))
+    const regex = new RegExp(splittedTranslatedValue.join("(.*)"))
     var result = regex.exec(domValue)
     result?.shift()
     return result?result:[];
@@ -248,5 +240,22 @@ class LocalizedBrothers {
   }
 }
 
-(window as any).i18n = new LocalizedBrothers();
-(window as any).registerScreen(LocalizedBrothers.id, new LocalizedBrothers());
+var i18n = new LocalizedBrothers();
+(window as any).registerScreen(LocalizedBrothers.id, i18n);
+
+(window as any).jQuery.fn.origHtml = (window as any).jQuery.fn.html;
+(window as any).jQuery.fn.html = function() {
+  var temp = (window as any).jQuery.fn.origHtml.apply(this, arguments);
+  i18n.translateElement(this[0] as HTMLElement, "en", i18n.getCurrentlang())
+  return temp
+};
+
+// Override jQuery's text() method to use Element's textContent method
+(window as any).jQuery.fn.origText = (window as any).jQuery.fn.text;
+(window as any).jQuery.fn.text = function() {
+  var temp = (window as any).jQuery.fn.origText.apply(this, arguments);
+  i18n.translateElement(this[0] as HTMLElement, "en", i18n.getCurrentlang())
+  return temp
+};
+
+i18n.setLang("en")
