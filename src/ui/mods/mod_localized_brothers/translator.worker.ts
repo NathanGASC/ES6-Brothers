@@ -92,8 +92,7 @@ class LocalizedBrothersWorker {
 
     /**
      * Parse a string and return it formated
-     * @param value 
-     * @param data 
+     * @param value a SQ fomated string
      */
     private translationParser(value: string) {
         //Break line
@@ -111,6 +110,10 @@ class LocalizedBrothersWorker {
         return value
     }
 
+    /**
+     * Parse a string and return it formated
+     * @param value a HTML fromated string
+     */
     private reverseTranslationParser(value: string): string {
         //Dialog
         value = value.replace(/\n<br>\n<br><span style=\"color:#bcad8c\">\"/g, "%SPEECH_ON%")
@@ -128,9 +131,9 @@ class LocalizedBrothersWorker {
 
     /**
      * Extract the data which is in the dom value based on the translation value and the postion of the placeholders
-     * @param domValue 
-     * @param translationValue 
-     * @returns 
+     * @param domValue the html which have been taken from the page and which contain data
+     * @param translationValue the equivalant translation in the same language
+     * @returns the array of data which was in domValue
      */
     private dataExtractor(domValue: string, translationValue: string): string[] {
         const splittedTranslatedValue = translationValue.split(/\(%.*?%\)/)
@@ -147,6 +150,13 @@ class LocalizedBrothersWorker {
         return result ? result : [];
     }
 
+    //TODO: handle tag for data. This way even if params aren't displayed in the same order, we can translate
+    /**
+     * Inject data in the new translation
+     * @param translation the translation string
+     * @param dataList the data which are to be inserted
+     * @returns the string with the data
+     */
     private dataInjector(translation: string, dataList: string[]) {
         dataList.forEach((data) => {
             translation = translation.replace(/\(%.*?%\)/, data)

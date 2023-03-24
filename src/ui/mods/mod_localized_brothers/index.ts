@@ -94,10 +94,6 @@ class LocalizedBrothers {
    * @returns the tranlsation for the given key/lang or undefined if not
    */
   getValueFor(key: string, lang: string) {
-    // Bad idea, don't do it
-    // this.workerCall<GetValueFor>("getValueFor", [key, lang], (data) => {
-    //   callback(data)
-    // })
     return (this.dictionary as any)[lang][key] as string|undefined
   }
 
@@ -151,7 +147,7 @@ class LocalizedBrothers {
   translateElement(element: HTMLElement, fromLang: string, toLang: string) {
     const startTime = new Date()
     const domText = element.innerHTML;
-    //TODO: Optimisation work here to avoid translating things which don't need to
+    //TODO: Optimisation work here to avoid translating elements which don't need to. Avoid Worker for performance.
     //If no text, no translation
     if (element.textContent == "" || element.textContent == undefined) return
     //If the text is calculation, numbers, don't need to translate
