@@ -7,6 +7,7 @@ const path = require("path");
 const isProduction = process.env.NODE_ENV == "production";
 const modName = process.env.MOD_NAME;
 const distFolder = process.env.DIST_FOLDER;
+const dataFolder = process.env.GAME_DATA_FOLDER
 
 const distModPath = `${distFolder}${modName}`
 
@@ -33,8 +34,8 @@ const config = {
     {
       apply: (compiler) => {
         compiler.hooks.entryOption.tap('Zip', (compilation) => {
-          console.log(`npm run zip -- --src "${process.env.DIST_FOLDER}" --output "${process.env.GAME_DATA_FOLDER}" ..."`)
-          exec(`npm run zip -- --src "${process.env.DIST_FOLDER}" --output "${process.env.GAME_DATA_FOLDER}"`, (err, stdout, stderr) => {
+          console.log(`npm run zip -- --src "${distModPath}" --output "${dataFolder}" ..."`)
+          exec(`npm run zip -- --src "${distModPath}" --output "${dataFolder}"`, (err, stdout, stderr) => {
             if (stdout) process.stdout.write(stdout);
             if (stderr) process.stderr.write(stderr);
           });
