@@ -2,6 +2,8 @@ import 'core-js/actual/dom-collections/for-each';
 import 'core-js/actual/array/virtual/find-index';
 // @ts-ignore: File is not a module
 import WorkerTranslator from "worker-loader!./translator.worker";
+import en from "./translations/en.json"
+import fr from "./translations/fr.json"
 
 export type TranslateStringCallback = { translation: string, key: string }
 export type GetKeyFor = { key: string }
@@ -11,13 +13,30 @@ class LocalizedBrothers {
   sqHandle: any = null
   static id = "localized_brothers";
   private currentLang: string = "en"
+  /**
+   * A worker which is used for heavy calculation (Regex)
+   */
   private workerTranslator: Worker = new WorkerTranslator()
+  /**
+   * Unique id which is used to recognize the worker which respond
+   */
   private uniqueWorkerId: number = 0;
+  /**
+   * Dictionary shouldn't be here as it should therorically only be used
+   * in the worker, BUT worker must do simple operations. Chaining too much
+   * operation will drop FPS from a lot! So we need those dictionary to
+   * avoid soliciting the worker too much.
+   */
+  private dictionary = {fr,en}
 
   constructor() {
 
   }
 
+  /**
+   * When SQ connect to JS (menu should be on screen, and dependecies should be loaded)
+   * @param sqHandle 
+   */
   onConnection(sqHandle: any) {
     this.sqHandle = sqHandle;
 
@@ -52,7 +71,7 @@ class LocalizedBrothers {
   }
 
   /**
-   * Short name for "setCurrentLang"
+   * Short name for "setCurrentLang". Will act the same and translate the game with the given lang
    * @param lang The new lang you want to use (ex:"fr", "en", "ja", ...)
    */
   setLang(lang: string) {
@@ -64,8 +83,8 @@ class LocalizedBrothers {
    * @param key the key of the wanted translation
    * @returns the tranlsation for the given key/current lang or undefined if not
    */
-  getValue(key: string, callback: (value: GetValueFor) => void) {
-    return this.getValueFor(key, this.currentLang, callback)
+  getValue(key: string) {
+    return this.getValueFor(key, this.currentLang)
   }
 
   /**
@@ -74,10 +93,12 @@ class LocalizedBrothers {
    * @param lang the lang which should have this key
    * @returns the tranlsation for the given key/lang or undefined if not
    */
-  getValueFor(key: string, lang: string, callback: (data: GetValueFor) => void) {
-    this.workerCall<GetValueFor>("getValueFor", [key, lang], (data) => {
-      callback(data)
-    })
+  getValueFor(key: string, lang: string) {
+    // Bad idea, don't do it
+    // this.workerCall<GetValueFor>("getValueFor", [key, lang], (data) => {
+    //   callback(data)
+    // })
+    return (this.dictionary as any)[lang][key] as string|undefined
   }
 
   /**
@@ -133,23 +154,22 @@ class LocalizedBrothers {
     //TODO: Optimisation work here to avoid translating things which don't need to
     //If no text, no translation
     if (element.textContent == "" || element.textContent == undefined) return
+    //If the text is calculation, numbers, don't need to translate
+    if (!isNaN(parseInt(element.textContent))) return
     //If same key, same text, stay inchanged
     var oldKey = element.dataset.i18nKey;
-    this.getValueFor(oldKey, this.currentLang, (data) => {
-      if (oldKey != undefined && domText == data.value) {
-        return;
-      }
-      //If the text is calculation, numbers, don't need to translate
-      if (!isNaN(parseInt(element.textContent))) return
-      this.workerCall<TranslateStringCallback>("translateString", [domText, fromLang, toLang], (data) => {
-        const endTime = new Date();
-        (console as any).reverseLog(`[(${endTime.getTime() - startTime.getTime()}ms)  ${fromLang} => ${toLang}] ${element.innerHTML} => ${data.translation}`)
-        if (data == undefined || data.translation == undefined) return
-        element.dataset.i18nKey = data.key;
-        element.innerHTML = data.translation;
-      })
-    })
+    var oldTranslation = this.getValueFor(oldKey, this.currentLang)
+    if (oldKey != undefined && domText == oldTranslation) {
+      return;
+    }
 
+    this.workerCall<TranslateStringCallback>("translateString", [domText, fromLang, toLang], (data) => {
+      const endTime = new Date();
+      (console as any).reverseLog(`[(${endTime.getTime() - startTime.getTime()}ms)  ${fromLang} => ${toLang}] ${element.innerHTML} => ${data.translation}`)
+      if (data == undefined || data.translation == undefined) return
+      element.dataset.i18nKey = data.key;
+      element.innerHTML = data.translation;
+    })
   }
 
   /**
@@ -174,6 +194,13 @@ class LocalizedBrothers {
     this.translateAllIn(document.body, fromLang, toLang)
   }
 
+  /**
+   * Call a function which is the worker with the given args and at the end retrieve the
+   * data in the callback. WARNING: Don't use this method for simple operations!!!
+   * @param fun the function name
+   * @param args the arguments of the function
+   * @param callback the callback with the data
+   */
   private workerCall<T>(fun: string, args: string[], callback: (data: T) => void) {
     var uniqueIdClone = this.uniqueWorkerId++
 

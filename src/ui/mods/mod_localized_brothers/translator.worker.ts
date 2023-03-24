@@ -59,6 +59,8 @@ class LocalizedBrothersWorker {
     }
 
     /**
+     * @deprecated this method shouldn't be used in worker as it is a simple operation.
+     * 
      * Get a translation using a key for a given lang
      * @param key the key of the wanted translation
      * @param lang the lang which should have this key
@@ -156,7 +158,7 @@ class LocalizedBrothersWorker {
 var instance = new LocalizedBrothersWorker()
 
 ctx.addEventListener("message", (event) => {
-    var returnData: (GetKeyFor | GetValueFor | undefined | { id?: number }) & { id?: number } | undefined = undefined
+    var returnData: (TranslateStringCallback | GetKeyFor | GetValueFor | undefined | { id?: number }) & { id?: number } | undefined = undefined
     switch (event.data.call) {
         case "translateString":
             returnData = instance.translateString(event.data.args[0], event.data.args[1], event.data.args[2]) as TranslateStringCallback
@@ -166,11 +168,11 @@ ctx.addEventListener("message", (event) => {
                 key: instance.getKeyFor(event.data.args[0], event.data.args[1])
             } as GetKeyFor
             break;
-        case "GetValueFor":
-            returnData = {
-                value: instance.getValueFor(event.data.args[0], event.data.args[1])
-            } as GetValueFor
-            break;
+        // case "GetValueFor":
+        //     returnData = {
+        //         value: instance.getValueFor(event.data.args[0], event.data.args[1])
+        //     } as GetValueFor
+        //     break;
         default:
             break;
     }
