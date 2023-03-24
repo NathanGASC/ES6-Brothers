@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack",
-    "watch": "webpack --watch"
+    "watch": "webpack --watch",
+    "zip": "cd ./Mod-Brothers/ && npm i && npm run start -- $1"
   },
   "author": "",
   "license": "ISC",

@@ -1,7 +1,7 @@
 require('dotenv').config();
 const CopyPlugin = require("copy-webpack-plugin");
 const WatchExternalFilesPlugin = require('webpack-watch-files-plugin').default
-
+const exec = require('child_process').exec;
 const path = require("path");
 
 const isProduction = process.env.NODE_ENV == "production";
@@ -29,7 +29,18 @@ const config = {
       patterns: [
         { from: "./**/*", to: "./../../../[path][name][ext]", context: "./src", },
       ],
-    })
+    }),
+    {
+      apply: (compiler) => {
+        compiler.hooks.entryOption.tap('Zip', (compilation) => {
+          console.log(`npm run zip -- --src "${process.env.DIST_FOLDER}" --output "${process.env.GAME_DATA_FOLDER}" ..."`)
+          exec(`npm run zip -- --src "${process.env.DIST_FOLDER}" --output "${process.env.GAME_DATA_FOLDER}"`, (err, stdout, stderr) => {
+            if (stdout) process.stdout.write(stdout);
+            if (stderr) process.stderr.write(stderr);
+          });
+        });
+      }
+    }
   ],
   module: {
     rules: [
