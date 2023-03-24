@@ -59,8 +59,6 @@ class LocalizedBrothersWorker {
     }
 
     /**
-     * @deprecated this method shouldn't be used in worker as it is a simple operation.
-     * 
      * Get a translation using a key for a given lang
      * @param key the key of the wanted translation
      * @param lang the lang which should have this key
