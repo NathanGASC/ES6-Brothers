@@ -7,7 +7,11 @@
     "allowJs": true,
     "sourceMap": false,
     "resolveJsonModule": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "typeRoots": [
+      "src/**/*",
+    ]
   },
   "files": ["src/ui/mods/mod_localized_brothers/index.ts"]
 }

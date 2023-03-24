@@ -14,9 +14,9 @@ Some mods already exist to translate the game but they are for one language. Tho
 ## How to add translations ?
 First of all, thanks to take a look at this mod. In the mod files, you can find under `./src/ui/mods/mod_localized_brothers/translations` some json files containing translations. You can edit those files or create new ones. Once it's done, you can if you know how to do it, create a pull request and if you are not a dev, you can open an Issue and put a zip file containing your translations in it. The best way to translate those files are to copy the "en.json" one and translate value by value. Don't translate the keys, only the values {key:value}.
 
-Some translations contain values, like for exemple "Jour 2 (Beginner/Beginner)". You can translate this value by doing somethings like that "Day %a% (%b%,%c%)". The values between two % are placeholders for values. You can name it how you want, it's not important. Exception for %SPEECH_ON% and %SPEECH_OFF% which are reserved.
+Some translations contain values, like for exemple "Jour 2 (Beginner/Beginner)". You can translate this value by doing somethings like that "Day (%a%) ((%b%),(%c%))". The values between "(% %)" are placeholders for values. You can name it how you want, it's not important. Exception for %SPEECH_ON% and %SPEECH_OFF% which are reserved.
 
-Lastly, don't worry if there is errors in your translation files. With enough user and time, corrections will be done. Thanks again for the reading.
+Lastly, don't worry if there is errors in your translation files. With enough users and time, corrections will be done. Thanks again for the reading.
 
 # Dependencies
 - [Modding Standards and Utilities (MSU)](https://www.nexusmods.com/battlebrothers/mods/479)

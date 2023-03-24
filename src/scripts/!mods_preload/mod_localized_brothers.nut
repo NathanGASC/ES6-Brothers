@@ -1,4 +1,3 @@
-
 ::LocalizedBrothers <- {
 	ID = "localized_brothers",
 	Version = "1.0.0",

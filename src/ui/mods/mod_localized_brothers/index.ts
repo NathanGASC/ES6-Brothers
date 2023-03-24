@@ -1,23 +1,55 @@
 import 'core-js/actual/dom-collections/for-each';
 import 'core-js/actual/array/virtual/find-index';
+// @ts-ignore: File is not a module
+import WorkerTranslator from "worker-loader!./translator.worker";
 
 import fr from "./translations/fr.json"
 import en from "./translations/en.json"
-import { isAncestorOf } from "./utils/isAncestorOf"
 import { escapeRegExp } from "./utils/escapeRegExp"
-import {traverseChildren} from "./utils/traverseChildren"
 
 class LocalizedBrothers {
   sqHandle: any = null
   static id = "localized_brothers";
   dictionary = { fr, en }
   private currentLang: keyof typeof this.dictionary = "en"
-  
+  private workerTranslator:Worker = new WorkerTranslator()
+  private uniqueWorkerId:number = 0;
+
   constructor() {
+
   }
 
   onConnection(sqHandle: any) {
     this.sqHandle = sqHandle;
+
+    //Overwrite $(...).html to translate.
+    (window as any).jQuery.fn.origHtml = (window as any).jQuery.fn.html;
+    (window as any).jQuery.fn.html = function (html: string) {
+      if (html != undefined) {
+        this[0].innerHTML = html;
+      } else {
+        return this[0].innerHTML
+      }
+      i18n.translateAllIn(this[0] as HTMLElement, "en", i18n.getCurrentlang());
+    };
+
+    //Overwrite $(...).text to translate
+    (window as any).jQuery.fn.origText = (window as any).jQuery.fn.text;
+    (window as any).jQuery.fn.text = function () {
+      var temp = (window as any).jQuery.fn.origText.apply(this, arguments);
+      i18n.translateElement(this[0] as HTMLElement, "en", i18n.getCurrentlang());
+      return temp
+    };
+
+    //Overwrite $(...)
+    var orignalInit = (window as any).$.prototype.init;
+    (window as any).$.prototype.init = (selector: any, context: any) => {
+      var instanceJquery = new orignalInit(selector, context)
+      if(instanceJquery[0] instanceof HTMLElement) {
+        this.translateElement(instanceJquery[0], "en", this.currentLang)
+      }
+      return instanceJquery
+    }
   }
 
   /**
@@ -67,33 +99,6 @@ class LocalizedBrothers {
   }
 
   /**
-   * Get a key from a value in the current lang.
-   * @param value the value which need to be finded to return is key
-   * @returns the key or udnefined if doesn't exist
-   */
-  getFromValue(value: string) {
-    return this.getFromValueForLang(value, this.currentLang)
-  }
-
-  /**
-   * Get a key from a value in the given lang.
-   * @param value the value which need to be finded to return is key
-   * @param lang the lang which should have this value
-   * @returns the key or udnefined if doesn't exist
-   */
-  getFromValueForLang(value: string, lang: keyof typeof this.dictionary) {
-    for (const key in this.dictionary[lang]) {
-      var _value = this.dictionary[lang][key as keyof typeof en]
-
-      //Build a regex which will accept everything as value between 2 "%".
-      var builtRegex = "^" + (escapeRegExp(_value)).replace(/%(.*?)%/g,".*") + "$"
-      var finalRegex = new RegExp(builtRegex, "gm")
-
-      if (finalRegex.test(value)) return key
-    }
-  }
-
-  /**
    * Translate an element from a specific lang to another. The innerHTML of this element will be searched in the translations
    * to get the translation key from the old language and translate it to another one.
    * @param element the element to translate
@@ -102,40 +107,39 @@ class LocalizedBrothers {
    */
   translateElement(element: HTMLElement, fromLang: string, toLang: string) {
     const domText = element.innerHTML;
-    const domTextFormated = this.reverseTranslationParser(domText);
-    var translationKey = this.getFromValueForLang(domTextFormated, fromLang as any);
-    if(!translationKey){
-      return
+    //TODO: Optimisation work here to avoid translating things which don't need to
+    //If no text, no translation
+    if(element.textContent == "" || element.textContent == undefined) return
+    //If same key, same text, stay inchanged
+    var oldKey = element.dataset.i18nKey;
+    if(oldKey != undefined && oldKey == (i18n.dictionary as any)[this.currentLang][oldKey]){
+      return;
     }
-    var oldTranslation = this.getFromKeyForLang(translationKey as any,fromLang as any) as string
-    oldTranslation = this.translationParser(oldTranslation)
-    var data = this.dataExtractor(domText, oldTranslation)
-    data = this.translateData(data, fromLang, toLang)
-    var newText = this.getFromKeyForLang(translationKey as any, toLang as any);
-    newText = this.translationParser(newText)
-    newText = this.dataInjector(newText, data);
+    if(!isNaN(parseInt(element.textContent))) return
 
-    element.innerHTML = newText;
-  }
+    var uniqueIdClone = this.uniqueWorkerId++
+    var onTranslation = (event: MessageEvent<any>) => {
+      if(event.data.id != uniqueIdClone) return
+      (console as any).reverseLog(`[${fromLang} => ${toLang}] ${element.innerHTML} => ${event.data.translation}`)
+      if (event.data == undefined || event.data.translation == undefined) return
+      element.dataset.i18nKey = event.data.key; 
+      element.innerHTML = event.data.translation;
+    };
 
-  /**
-   * Translate the data if needed. For example if a data is a difficulty "beginner", we want to translate it.
-   * @param data a data array to translate
-   * @param fromLang from a given lang
-   * @param toLang to another lang
-   * @returns return the same array but translated if possible
-   */
-  translateData(data:string[], fromLang: string, toLang: string){
-    data.forEach((v,i,o) => {
-      const dataKey = this.getFromValueForLang(v, fromLang as any)
-      if(dataKey){
-        var newTranslation = this.getFromKeyForLang(dataKey as any, toLang as any)
-        if(newTranslation) {
-          o[i] = newTranslation
-        }
-      }
+    this.workerTranslator.addEventListener("message", onTranslation, {once:true});
+
+    //Proceed to the translation
+    this.workerTranslator.postMessage({
+      call:"translateString",
+      args:[domText, fromLang, toLang],
+      id: uniqueIdClone
     })
-    return data;
+
+    //Proceed to the translation
+    // var data = this.translateString(domText, fromLang, toLang)
+    // if (data == undefined) return
+    // element.dataset.i18nKey = data.key; 
+    // element.innerHTML = data.translation;
   }
 
   /**
@@ -145,6 +149,7 @@ class LocalizedBrothers {
    * @param toLang translte to this lang
    */
   translateAllIn(root: HTMLElement, fromLang: string, toLang: string) {
+    this.translateElement(root as HTMLElement, fromLang, toLang)
     root.querySelectorAll("*").forEach((elem) => {
       this.translateElement(elem as HTMLElement, fromLang, toLang)
     })
@@ -158,104 +163,8 @@ class LocalizedBrothers {
   translateAll(fromLang: string, toLang: string) {
     this.translateAllIn(document.body, fromLang, toLang)
   }
-
-  /**
-   * Help to debug a lang to another one by prefixing text which are not translated from the current lang
-   * to the given one. NOTE: the translations should exist in the current lang. So if you are in english
-   * try to translate "this is a test" in french, but the translation don't exist in the en.json, it will stay like
-   * it is. If the key don't exist in the fr.json, it will become "[NOT TRANSLATED IN fr] this is a test"
-   * @param lang the lang you want to debug
-   */
-  debug(lang: string) {
-    document.querySelectorAll("*").forEach((elem) => {
-      const key = this.getFromValue(elem.innerHTML)
-      if (!key) return;
-      if (!this.getFromKeyForLang(key as any, lang as any)) {
-        elem.innerHTML = `[NOT TRANSLATED IN ${lang}] ${elem.innerHTML}`;
-        (elem as HTMLElement).style.fontSize = "12px";
-        (elem as HTMLElement).style.lineHeight = "12px";
-      }
-    })
-  }
-
-  /**
-   * Parse a string and return it formated
-   * @param value 
-   * @param data 
-   */
-  translationParser(value: string) {
-    //Break line
-    value = value.replace(/\n/g, "\n<br>")
-
-    //Dialog
-    value = value.replace(/%SPEECH_ON%/g, "\n<br>\n<br><span style=\"color:#bcad8c\">\"")
-    value = value.replace(/%SPEECH_OFF%(.)/g, "\"</span>\n<br>\n<br>$1")
-
-    //Image
-    value = value.replace(/\[img\]/g, "<img src=\"coui://")
-    value = value.replace(/\[\/img\]/g, "\">")
-
-    return value
-  }
-
-  reverseTranslationParser(value: string): string {
-    //Dialog
-    value = value.replace(/\n<br>\n<br><span style=\"color:#bcad8c\">\"/g, "%SPEECH_ON%")
-    value = value.replace(/"<\/span>(\n<br>\n<br>)*/g, "%SPEECH_OFF%")
-
-    //Image
-    value = value.replace(/<img src=\"coui:\/\//g, "[img]")
-    value = value.replace(/\">/g, "[/img]")
-
-    //Break line
-    value = value.replace(/\n<br>/g, "\n")
-
-    return value
-  }
-
-  /**
-   * Extract the data which is in the dom value based on the translation value and the postion of the placeholders
-   * @param domValue 
-   * @param translationValue 
-   * @returns 
-   */
-  dataExtractor(domValue:string, translationValue:string): string[]{
-    const splittedTranslatedValue = translationValue.split(/%.*?%/g)
-    //sanitize regex
-    splittedTranslatedValue.forEach((r,i,o)=>{
-        o[i] = escapeRegExp(r)
-    })
-
-    const regex = new RegExp(splittedTranslatedValue.join("(.*)"))
-    var result = regex.exec(domValue)
-    result?.shift()
-    return result?result:[];
-  }
-
-  dataInjector(translation:string, dataList:string[]){
-    dataList.forEach((data)=>{
-      translation = translation.replace(/%.*?%/, data)
-    })
-    return translation
-  }
 }
 
 var i18n = new LocalizedBrothers();
 (window as any).registerScreen(LocalizedBrothers.id, i18n);
-
-(window as any).jQuery.fn.origHtml = (window as any).jQuery.fn.html;
-(window as any).jQuery.fn.html = function() {
-  var temp = (window as any).jQuery.fn.origHtml.apply(this, arguments);
-  i18n.translateElement(this[0] as HTMLElement, "en", i18n.getCurrentlang())
-  return temp
-};
-
-// Override jQuery's text() method to use Element's textContent method
-(window as any).jQuery.fn.origText = (window as any).jQuery.fn.text;
-(window as any).jQuery.fn.text = function() {
-  var temp = (window as any).jQuery.fn.origText.apply(this, arguments);
-  i18n.translateElement(this[0] as HTMLElement, "en", i18n.getCurrentlang())
-  return temp
-};
-
-i18n.setLang("en")
+(window as any).i18n = i18n;
