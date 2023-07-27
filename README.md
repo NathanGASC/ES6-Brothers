@@ -1,3 +1,6 @@
+# Deprecated
+This project at the date of today (27/07/2023) still work but will be a duplicate of BBbuilder (https://github.com/TaroEld/BBbuilder). That's why I stop this project and will implement ES6 features in BBbuilder.
+
 # **ES6 Brothers**
 This repo contain a basic setup for modding **Battle Brothers**.
 
